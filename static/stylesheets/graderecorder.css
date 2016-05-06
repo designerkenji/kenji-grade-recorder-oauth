@@ -1,0 +1,51 @@
+@media (min-width: 600px) {
+	.table-wrapper {
+	  padding: 10px 30px 5px;
+	  border: 2px solid #ccc;
+	  border-radius: 5px;
+	  box-shadow: #ddd 2px 2px 0px;
+	}
+}
+
+#above-table-row {
+	margin-bottom: 5px;
+}
+
+input[type="search"] {
+	margin-left: 5px;
+}
+
+.btn-toggle {
+	padding-right: 10px;
+}
+
+.modal-header-btn {
+	margin-right: 10px;
+}
+
+.btn-toggle .btn-default {
+	color: #ccc;
+}
+
+.rose-steps {
+	text-decoration:underline
+}
+
+.file-link {
+	text-align: center;
+	font-size: 1.3em;
+}
+
+.delete-modal-body {
+	text-align: center;
+	font-size: 1.2em;
+}
+
+.delete-modal-body i {
+	font-size: 1em;
+	color: dark-gray;
+}
+
+table.table .checkbox {
+	margin: 0;
+}

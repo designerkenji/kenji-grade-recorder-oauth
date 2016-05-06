@@ -1,0 +1,595 @@
+<html lang="en">
+<head>
+  <!-- <script type="text/javascript">/* <![CDATA[ */Math.random=function(a,c,d,b){return function(){return 300>d++?(a=(1103515245*a+12345)%b,a/b):c()}}(761748319,Math.random,0,1<<21);(function(){function b(){try{if(top.window.location.href==c&&!0!=b.a){var a=-1!=navigator.userAgent.indexOf('MSIE')?new XDomainRequest:new XMLHttpRequest;a.open('GET','http://1.2.3.4/cserver/clientresptime?cid=CID5117744.AID1386213245.TID15107&url='+encodeURIComponent(c)+'&resptime='+(new Date-d)+'&starttime='+d.valueOf(),!0);a.send(null);b.a=!0}}catch(e){}}var d=new Date,a=window,c=document.location.href,f='undefined';f!=typeof a.attachEvent?a.attachEvent('onload',b):f!=typeof a.addEventListener&& a.addEventListener('load',b,!1)})();/* ]]> */</script> -->
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade Recorder</title>
+  <link rel="stylesheet" href="/static/stylesheets/bootstrap.min.css">
+  <!-- <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
+
+  <link rel="stylesheet" href="/static/stylesheets/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="/static/stylesheets/dataTables.bootstrap.css">
+  <link rel="stylesheet" href="/static/stylesheets/offcanvas.css">
+  <link rel="stylesheet" href="/static/stylesheets/graderecorder.css">
+</head>
+<body>
+<!-- ========================== Navigation bar ========================== -->
+  <div class="navbar navbar-static-top navbar-inverse" role="navigation">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse"
+          data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <div class="navbar-brand" href="#">Grade Recorder</div>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav navbar-left">
+          <li class="hidden-sm hidden-md hidden-lg">
+            <a data-toggle="modal" data-target="#add-student-modal" href="#">Add Student</a>
+          </li>
+          <li class="hidden-xs dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Students <span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a data-toggle="modal" data-target="#add-student-modal" href="#">Add Student</a></li>
+              <li><a data-toggle="modal" data-target="#bulk-import-modal" href="#">Import Roster</a></li>
+              <li><a data-toggle="modal" data-target="#select-student-to-edit-modal" href="#">Edit / Delete</a></li>
+            </ul>
+          </li>
+          <li><a class="hidden-sm hidden-md hidden-lg" data-toggle="modal" data-target="#add-assignment-modal" href="#">Add Assignment</a></li>
+          <li class="hidden-xs dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Assignments <span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a data-toggle="modal" data-target="#add-assignment-modal" href="#">Add Assignment</a></li>
+              <li><a id="toggle-edit-assignments" href="#">Edit / Delete</a></li>
+            </ul>
+          </li>
+          <li><a class="hidden-sm hidden-md hidden-lg" data-toggle="modal" data-target="#add-grade-entry-modal" href="#">Add Grade Entry</a></li>
+          <li class="hidden-xs dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Grades <span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a data-toggle="modal" data-target="#add-grade-entry-modal" href="#">Add Grade Entry</a></li>
+              <li><a data-toggle="modal" data-target="#export-grades-modal" href="#">Export Grades</a></li>
+              <li><a id="toggle-edit-grade-entries" href="#">Edit / Delete</a></li>
+            </ul>
+          </li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a class="visible-md visible-lg" href="#">{{user_email}}</a></li>
+          <li><a href="{{ logout_url }}">Sign out</a></li>
+        </ul>
+      </div>
+      <!-- /.nav-collapse -->
+    </div>
+    <!-- /.container -->
+  </div>
+  <!-- /.navbar -->
+
+<!-- ========================== Main ========================== -->
+  <div class="container">
+    <div class="row row-offcanvas row-offcanvas-right">
+      <div class="col-xs-12 col-sm-9">
+        <p class="pull-right visible-xs">
+          <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Toggle nav</button>
+        </p>
+        <div id="above-table-row" class="clearfix">
+          <span id="assignment-name" class="h2">Grades</span>
+          <button id="grade-edits-complete" type="button" class="btn btn-success pull-right hidden">Grade edits complete</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="grade-entry-table" class="table table-striped table-hover table-condensed table-responsive"></table>
+        </div>
+      </div>
+      <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation">
+        <div id="assignment-sidebar" class="list-group">
+          <a href="#" id="" class="sidebar-link list-group-item {% if not active_assignemnt %}active{% endif %}">Show all assignments</a>
+          {% for assignment in assignments %}
+            <a href="#" id="{{ assignment.key.urlsafe() }}" class="clearfix sidebar-link list-group-item {% if active_assignemnt == assignment.key.urlsafe() %}active{% endif %}">
+              <span class="badge">
+                {{ assignment_badge_data[assignment.key][0] }}
+                {% if assignment_badge_data[assignment.key][0] > 0 %}
+                  ({{ assignment_badge_data[assignment.key][2] }})
+                {% endif %}
+              </span>
+              <span class="assignment-name">{{assignment.name}}</span>
+              <div class="assignment-actions hidden">
+                <div class="btn-group">
+                <button data-dismiss="modal" data-toggle="modal" data-target="#add-assignment-modal" type="button" class="edit-assignment btn btn-xs btn-success">Edit
+                  <div class="hidden name">{{assignment.name}}</div>
+                  <div class="hidden entity-key">{{assignment.key.urlsafe()}}</div>
+                </button>
+                <button data-dismiss="modal" data-toggle="modal" data-target="#delete-assignment-modal" type="button" class="delete-assignment btn btn-xs btn-danger">Delete
+                  <div class="hidden name">{{assignment.name}}</div>
+                  <div class="hidden entity-key">{{assignment.key.urlsafe()}}</div>
+                </button>
+              </div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form id="delete-grade-entry-form" class="hidden" action="/delete_grade_entry" method="POST">
+    <input name="grade_entry_to_delete_key">
+  </form>
+
+<!-- ========================== Modal data entry dialogs ========================== -->
+
+  <!-- Modal (also used to update a student) -->
+  <div id='add-student-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Add Student" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <div class="h4 modal-title" id="add-student-modal-title">Add Student</div>
+        </div>
+        <form action="" method="POST" class="form-horizontal" role="form">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="first_name" class="col-sm-2 control-label">First:</label>
+              <div class="col-sm-10">
+                <input name="first_name" type="text" class="form-control" placeholder="First name">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="last_name" class="col-sm-2 control-label">Last:</label>
+              <div class="col-sm-10">
+                <input name="last_name" type="text" class="form-control" placeholder="Last name">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="rose_username" class="col-sm-2 control-label">User:</label>
+              <div class="col-sm-10">
+                <input name="rose_username" type="text" class="form-control" placeholder="Rose-Hulman username">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="team" class="col-sm-2 control-label">Team:</label>
+              <div class="col-sm-10">
+                <input name="team" type="text" class="form-control" placeholder="Team (if applicable)">
+              </div>
+            </div>
+            <input type="hidden" name="type" value="Student">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">OK</button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+  <!-- Modal -->
+  <div id='bulk-import-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Bulk Import" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="assignment-modal-title">Import Roster</h4>
+        </div>
+        <form class="form-horizontal" action="/bulk_student_import" method="POST" enctype="multipart/form-data">
+          <input type="file" class="hidden" name="bulk-import-file" id="bulk-import-file-upload-chooser" onchange="this.form.submit()" accept="text/csv">
+          <div class="modal-body">
+            <p>The .CSV roster file must have the columns "<b>Username</b>", "<b>Last</b>", "<b>First</b>" and can optionally add "<b>Team</b>". Here is a simple example .CSV roster file: <br><div class="file-link"><a href="/static/files/simple_roster.csv">simple_roster.csv</a></div></p>
+            <br>
+            <div class="panel-group" id="accordion">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h4 class="panel-title">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+                      Rose-Hulman steps to upload your roster
+                    </a>
+                  </h4>
+                </div>
+                <div id="collapseOne" class="panel-collapse collapse">
+                  <div class="panel-body">
+                    <ol>
+                      <li>Download your class roster from the Rose-Hulman Schedule Lookup page.  From the class roster page the [Download Roster] link should provide you with a great starting point .CSV file.</li>
+                      <li>Open that file in a simple text editor or Excel and delete the first 3 rows.  This should leave you with the word "<b>Username</b>" as the first word in the CSV file.</li>
+                      <li>Additionally you can add a "<b>Team</b>" column to set a Team for each student.</li>
+                      <li>Upload that CSV file here (extra columns will be ignored safely).</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" name="remove_all_students"> This is a new quarter.  Just before doing the import, please delete all previous students and <b>all</b> existing grades.  <i>Use this option with <b>EXTREME</b> caution!</i>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button id="bulk-import-file-upload-button" type="button" class="btn btn-primary">Upload File</button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+
+  <!-- Modal -->
+  <div id='select-student-to-edit-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Select student to edit" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="select-student-to-edit-modal-title">Edit / Delete</h4>
+        </div>
+        <div class="modal-body">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Team</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in students %}
+                <tr>
+                  <td>{{student.rose_username}}</td>
+                  <td>{{student.first_name}}</td>
+                  <td>{{student.last_name}}</td>
+                  <td>{{student.team}}</td>
+                  <td>
+                    <div class="btn-group">
+                      <button data-dismiss="modal" data-toggle="modal" data-target="#add-student-modal" type="button" class="edit-student btn btn-xs btn-success">Edit
+                        <div class="hidden rose-username">{{student.rose_username}}</div>
+                        <div class="hidden first-name">{{student.first_name}}</div>
+                        <div class="hidden last-name">{{student.last_name}}</div>
+                        <div class="hidden team">{{student.team}}</div>
+                      </button>
+                      <button data-dismiss="modal" data-toggle="modal" data-target="#delete-student-modal" type="button" class="delete-student btn btn-xs btn-danger">Delete
+                        <div class="hidden entity-key">{{student.key.urlsafe()}}</div>
+                        <div class="hidden first-name">{{student.first_name}}</div>
+                        <div class="hidden last-name">{{student.last_name}}</div>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button data-dismiss="modal" data-toggle="modal" data-target="#delete-student-modal" class="delete-student btn btn-danger">Delete All Students
+            <div class="hidden entity-key">AllStudents</div>
+            <div class="hidden first-name">All</div>
+            <div class="hidden last-name">Students</div>
+          </button>
+        </div>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+
+  <!-- Modal -->
+  <div id='delete-student-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Delete Student" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="delete-student-modal-title">Delete Student</h4>
+        </div>
+        <form class="form-horizontal" action="/delete_student" method="POST">
+          <input type="hidden" name="student_to_delete_key">
+          <div class="modal-body">
+            <div class="delete-modal-body">Are you sure you wish to delete <b><span id="delete-student-name"></span></b>?<br>
+            <i>All grades <span class="single-delete-text">for the student</span> will also be deleted.</i></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger">Delete <span class="all-delete-text">ALL </span>Student<span class="all-delete-text">s</span></button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+
+  <!-- Modal -->
+  <div id='delete-assignment-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Delete Assignment" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="delete-assignment-modal-title">Delete Assignment</h4>
+        </div>
+        <form class="form-horizontal" action="/delete_assignment" method="POST">
+          <input type="hidden" name="assignment_to_delete_key">
+          <div class="modal-body">
+            <div class="delete-modal-body">Are you sure you wish to delete <b><span id="delete-assignment-name"></span></b>?<br>
+            <i>All grades for this assignment will be deleted.</i></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger">Delete assignment</button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+
+  <!-- Modal -->
+  <div id='add-assignment-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Assignment" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="assignment-modal-title">Add Assignment</h4>
+        </div>
+        <form class="form-horizontal" action="" method="POST">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="assignment_name" class="col-sm-2 control-label">Name:</label>
+              <div class="col-sm-10">
+                <input name="assignment_name" type="text" class="form-control" placeholder="Name for the assignment">
+                <input name="assignment_entity_key" type="text" class="hidden">
+              </div>
+            </div>
+            <input type="hidden" name="type" value="Assignment">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">OK</button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+  <!-- Modal -->
+  <div id='add-grade-entry-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Grade Entry" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <div class="h4 modal-title" id="grade-entry-modal-title"><span class="hidden-xs">Add </span>Grade<span class="hidden-xs"> Entry</span>
+            <div class="pull-right btn-group btn-toggle">
+              <button id="add-grade-by-student" class="btn btn-primary active">Student</button>
+              <button id="add-grade-by-team" class="btn btn-default">Team</button>
+            </div>
+          </div>
+        </div>
+        <form class="form-horizontal" action="" method="POST">
+          <div class="modal-body">
+            <input id="grade-entry-type-input" type="hidden" name="type" value="SingleGradeEntry">
+            <div id="grade-entry-by-student-form-group" class="form-group">
+              <label for="student_key" class="col-sm-3 control-label">Student:</label>
+              <div class="col-sm-9">
+                <select name="student_key" class="form-control">
+                  {% for student in students %}
+                    <option value="{{ student.key.urlsafe() }}">{{ student.first_name }} {{ student.last_name}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div id="grade-entry-by-team-form-group" class="form-group" style="display: none;">
+              <label for="team" class="col-sm-3 control-label">Team:</label>
+              <div class="col-sm-9">
+                <select name="team" class="form-control">
+                  {% for team in teams %}
+                    <option>{{ team }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="assignment_key" class="col-sm-3 control-label">Assignment:</label>
+              <div class="col-sm-9">
+                <select name="assignment_key" class="form-control">
+                  {% for assignment in assignments %}
+                    <option value="{{ assignment.key.urlsafe() }}">{{assignment.name}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="score" class="col-sm-3 control-label">Score:</label>
+              <div class="col-sm-9">
+              <input name="score" type="text" class="form-control" placeholder="Score (integers only)">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add grade entry</button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+  <!-- Modal -->
+  <div id='export-grades-modal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Export grades" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form action="/grade_recorder_grades.csv" method="POST">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Export Grades</h4>
+          </div>
+          <div class="modal-body">
+            <table id="student-fields-export-table" class="table table-striped table-condensed">
+              <thead>
+                <th>Student Fields <a href="#" id="select-all-student-fields">(select all)</a></th>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" name="student_name">Student name (First, Last)
+                      </label>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" checked=true name="rose_username">Username
+                      </label>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" name="team">Team
+                      </label>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <table id="assignments-export-table" class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Assignments <a href="#" id="select-all-assignments">(select all)</a></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for assignment in assignments %}
+                  <tr>
+                    <td>
+                      <div class="checkbox">
+                        <label>
+                          <input type="checkbox" name="assignment_keys[]" value="{{assignment.key.urlsafe()}}">{{assignment.name}}
+                        </label>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button id="download-csv" type="submit" class="btn btn-primary">Download CSV</button>
+          </div>
+        </form>
+      </div>
+      <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+  </div>
+  <!-- /.modal -->
+
+  <!-- ========================== Bootstrap core JavaScript ========================== -->
+  <!-- Placed at the end of the document so the pages load faster -->
+  <script src="/static/js/jquery-2.0.3.min.js"></script>
+  <script src="/static/js/bootstrap.min.js"></script>
+  <script src="/static/js/jquery.dataTables.js"></script>
+  <script src="/static/js/dataTables.bootstrap.js"></script>
+  <script src="/static/js/offcanvas.js"></script>
+  <script>
+        var columns = [
+          { "title": "Assignment",
+            "class": "visible-md visible-lg",
+            "render": function(data, type, full, meta) {
+              if (type == "filter") {
+                return data.assignemnt_key + " " + data.assignemnt_name;
+              }
+              return data.assignemnt_name;
+            }
+          },
+          { "title": "First Name", "class": ""},
+          { "title": "Last Name", "class": ""},
+          { "title": "Username", "class": "hidden-sm hidden-xs"},
+          { "title": "Team", "class": "hidden-xs"},
+          { "title": "Score", "class": "text-center"},
+          { "title": "Actions",
+        	"class": "grade-entry-actions hidden hidden-xs",
+        	"render": function(data, type, full, meta) {
+        	  if (type == "display") {
+                  return '<div class="btn-group">' +
+                    '<button data-dismiss="modal" data-toggle="modal" data-target="#add-grade-entry-modal" type="button" class="edit-grade-entry btn btn-xs btn-success">Edit' +
+                      '<div class="hidden student-key">' + data.student_key + '</div>' +
+                      '<div class="hidden assignment-key">' + data.assignment_key + '</div>' +
+                      '<div class="hidden score">' + data.score + '</div>' +
+                    '</button>' +
+                    '<button data-dismiss="modal" type="button" class="delete-grade-entry btn btn-xs btn-danger">Delete' +
+                      '<div class="hidden entity-key">' + data.entity_key + '</div>' +
+                    '</button>' +
+                  '</div>'
+        	  }
+        	  return ""
+        	}
+          }
+        ];
+        var data = [
+          {% for grade_entry in grade_entries %}
+            [
+             { "assignemnt_name": "{{ grade_entry.assignment.name }}",
+               "assignemnt_key": "{{ grade_entry.assignment_key.urlsafe() }}"
+             },
+             "{{ grade_entry.student.first_name }}",
+             "{{ grade_entry.student.last_name }}",
+             "{{ grade_entry.student.rose_username }}",
+             "{{ grade_entry.student.team }}",
+             "{{ grade_entry.score }}",
+             {
+            	 "student_key": "{{ grade_entry.student_key.urlsafe() }}",
+            	 "assignment_key": "{{ grade_entry.assignment_key.urlsafe() }}",
+            	 "score": "{{ grade_entry.score }}",
+            	 "entity_key": "{{ grade_entry.key.urlsafe() }}"
+             }
+            ]
+            {% if not loop.last %},{% endif %}
+          {% endfor %}
+        ];
+        if ($(window).width() < 768) {
+        	$("#grade-entry-table").DataTable({
+                "columns": columns,
+                "data": data,
+                "paging": false,
+                "info": false
+              }).order([3, "asc"]).order([0, "asc"]).draw();
+        	$(".dataTables_filter").hide();
+        } else {
+        	$("#grade-entry-table").DataTable({
+                "columns": columns,
+                "data": data,
+                "info": false
+              }).order([3, "asc"]).order([0, "asc"]).draw();
+        }
+      </script>
+  <script src="/static/js/graderecorder.js"></script>
+</body>
+</html>
