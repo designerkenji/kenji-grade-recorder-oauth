@@ -14,7 +14,9 @@ handlers:
   static_dir: static
 
 # Endpoints placeholder
-
+- url: /_ah/api.*
+  script: api.app
+  
 #Main handler
 - url: .*
   script: main.app
@@ -27,4 +29,5 @@ libraries:
 # - name: pycrypto
 #  version: "2.6"
 # Endpoints library
-  
+- name: endpoints
+  version: latest
