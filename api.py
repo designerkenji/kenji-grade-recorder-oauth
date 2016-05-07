@@ -43,5 +43,18 @@ class GradeRecorderApi(protorpc.remote.Service):
     def gradeentry_list(self, query):
         """ list all the grade entries for a given assignment """
         return query
+    
+    @Assignment.method(user_required="True", 
+                             name="assignment.insert", path="assignment/insert", http_method="POST")
+    def assignment_insert(self, assignment):
+        """ add or update an assignment owned by the given user """
+        if assignment.form_datastore:
+            assignment_with_parent = assignment
+        else:
+            user = endpoints.get_current_user()
+            assignment_with_parent = Assignment(parent=main.get_parent_key(user), name=assignment.name)
+        assignment_with_parent.put()
+        return assignment_with_parent
+    
 
 app = endpoints.api_server(GradeRecorderApi, restricted=False)
