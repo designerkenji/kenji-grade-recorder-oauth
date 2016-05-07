@@ -75,8 +75,8 @@ class GradeRecorderApi(protorpc.remote.Service):
     @Assignment.method(user_required="True",
                        request_fields=("entityKey",),
                        name="assignment.delete",
-                       path="assignment/insert", 
-                       http_method="POST")
+                       path="assignment/delete/{entityKey}", 
+                       http_method="DELETE")
     def assignment_delete(self, assignment):
         """ delete an assignment with the given key, plus all its associated grade entries """
         if not assignment.from_datastore:
@@ -87,4 +87,16 @@ class GradeRecorderApi(protorpc.remote.Service):
         assignment.key.delete()
         return Assignment(name="deleted")
 
+    @GradeEntry.method(user_required="True",
+                       request_fields=("entityKey",),
+                       name="gradeentry.delete",
+                       path="gradeentry/delete/{entityKey}", 
+                       http_method="DELETE")
+    def gradeentry_delete(self, gradeentry):
+        """ delete an gradeentry with the given key """
+        if not gradeentry.from_datastore:
+            raise endpoints.NotFoundException("No gradeentry with this key exists")
+        gradeentry.key.delete()
+        return GradeEntry(score=1)
+    
 app = endpoints.api_server(GradeRecorderApi, restricted=False)
