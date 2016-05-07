@@ -55,6 +55,21 @@ class GradeRecorderApi(protorpc.remote.Service):
             assignment_with_parent = Assignment(parent=main.get_parent_key(user), name=assignment.name)
         assignment_with_parent.put()
         return assignment_with_parent
-    
+
+    @GradeEntry.method(user_required="True", 
+                             name="gradeentry.insert", path="gradeentry/insert", http_method="POST")
+    def gradeentry_insert(self, grade_entry):
+        """ add or update an grade entry for an assignment """
+        if grade_entry.form_datastore:
+            grade_entry_with_parent = grade_entry
+        else:
+            student = grade_entry.student_key.get()
+            grade_entry_with_parent = GradeEntry(parent=grade_entry.assignment_key,
+                                                 id=student.rose_username,
+                                                 score=grade_entry.score,
+                                                 student_key=grade_entry.student_key,
+                                                 assignment_key=grade_entry.assignment_key)
+        grade_entry_with_parent.put()
+        return grade_entry_with_parent
 
 app = endpoints.api_server(GradeRecorderApi, restricted=False)
