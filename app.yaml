@@ -14,7 +14,7 @@ handlers:
   static_dir: static
 
 # Endpoints placeholder
-- url: /_ah/api.*
+- url: /_ah/spi.*
   script: api.app
   
 #Main handler
